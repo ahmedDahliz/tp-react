@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Container, Button } from 'react-bootstrap';
+import { Form, Container, Button, Alert } from 'react-bootstrap';
 import { bookService } from '../services/BookService';
 import { useParams, useHistory } from 'react-router-dom';
 
@@ -17,14 +17,17 @@ const BookForm = (props)=>{
     
     const {id} = useParams();
     const [Book, setBook] = useState(formBook);
+    const [isValide, setIsValide] = useState(true);
     let history = useHistory();   
-     
-    if(id){
-        bookService.getBookById(id).then(response=>{
-            formBook = response.data;
-            setBook(formBook);
-        })
-    } 
+
+    useEffect(()=>{
+        if(id){
+            bookService.getBookById(id).then(response=>{
+                formBook = response.data;
+                setBook(formBook);
+            })
+        } 
+    }, [])
 
     const getChangedValue = (e) => {
         formBook[e.target.name] = e.target.value;
@@ -32,19 +35,31 @@ const BookForm = (props)=>{
 
     const submitBookForm = (e)=>{
         e.preventDefault();
-        console.log(formBook);
-        if(props.mode === "edit"){
-            bookService.editBook(formBook).then(response => {
-                history.push('/');
-            })
-        }else if(props.mode === "create") {
-            bookService.createBook(formBook).then(rep => {
-                history.push('/');
-            });
+        let isNull = Object.values(formBook).includes(null);
+        if(isNull){
+            setIsValide(false);
+        }else {
+            setIsValide(true);
+            if(props.mode === "edit"){
+                bookService.editBook(formBook).then(response => {
+                    history.push('/');
+                })
+            }else if(props.mode === "create") {
+                bookService.createBook(formBook).then(rep => {
+                    history.push('/');
+                });
+            }
         }
     }
     return (
         <Container className="m-5">
+            {
+                !isValide ?(
+                    <Alert variant="danger">
+                        One of the fields is empty !
+                    </Alert>
+                ) : ''
+            }
             <Form onSubmit={submitBookForm}>
                 <Form.Group controlId="exampleForm.ControlInput1">
                     <Form.Label>Title</Form.Label>
@@ -71,7 +86,7 @@ const BookForm = (props)=>{
                     <Form.Control type="text" name="author" placeholder="Author" defaultValue={Book.author} onChange={getChangedValue} />
                 </Form.Group>
                 <Form.Group controlId="exampleForm.ControlTextarea1">
-                    <Form.Label>Example textarea</Form.Label>
+                    <Form.Label>Summary</Form.Label>
                     <Form.Control as="textarea" name="summary" rows="3" defaultValue={Book.summary}  onChange={getChangedValue} />
                 </Form.Group>
                 {
